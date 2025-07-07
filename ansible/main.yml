@@ -1,0 +1,41 @@
+---
+- name: Simple FastAPI setup
+  hosts: all
+  become: yes
+
+  vars:
+    repo_url: "http://github.com/Innocent9712/ansible-handson.git"
+    app_dir: "/home/ec2-user/fastapi-app"
+    venv_dir: "{{ app_dir }}/venv"
+    listen_port: 8000
+
+  tasks:
+    - name: Install Python 3 and pip
+      yum:
+        name:
+          - python3
+          - python3-pip
+          - git
+        state: present
+
+    - name: Clone FastAPI app
+      become: false
+      git:
+        repo: "{{ repo_url }}"
+        dest: "{{ app_dir }}"
+        update: yes
+
+    - name: Install dependencies
+      become: false
+      pip:
+        requirements: "{{ app_dir }}/requirements.txt"
+        virtualenv: "{{ venv_dir }}"
+        virtualenv_python: python3
+
+    - name: Run FastAPI app
+      become: false
+      shell: |
+        pkill -f "uvicorn" || true
+        nohup {{ venv_dir }}/bin/uvicorn main:app --host 0.0.0.0 --port {{ listen_port }} > fastapi.log 2>&1 &
+      args:
+        chdir: "{{ app_dir }}"
