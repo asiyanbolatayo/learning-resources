@@ -163,3 +163,8 @@ With managed Kubernetes, the cloud provider takes on the complex and critical ta
 Containerization represents a fundamental shift in how we package, deploy, and manage applications. Starting from core Linux technologies like namespaces and cgroups, evolving through Docker's user-friendly tooling, and culminating in sophisticated orchestration platforms like Kubernetes, containers have become the foundation of modern cloud-native applications.
 
 The journey from understanding basic container isolation to managing complex distributed systems through Kubernetes orchestration provides developers and operations teams with powerful tools to build scalable, resilient, and portable applications.
+
+Extra resources for further learning include:
+- [Youtube Playlist on Linux Utilities that for the Core of Containerization](https://youtube.com/playlist?list=PLdh-RwQzDsaNWBex2I09OFLCph7l_KnQE&si=dHJ8LAAEQnxQBOFV)
+- [Docker Official Documentation](https://docs.docker.com/)
+- [Kubernetes Official Documentation](https://kubernetes.io/docs/home/)
