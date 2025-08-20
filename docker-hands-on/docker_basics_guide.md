@@ -176,35 +176,280 @@ docker pull myregistry.com/my-app:latest
 
 ## Docker Networking
 
-Docker creates isolated networks for containers to communicate.
+Docker provides several network drivers to handle different networking scenarios.
+
+### Network Types
+
+#### 1. Bridge Network (Default)
+The default network driver. Containers on the same bridge network can communicate with each other.
 
 ```bash
-# Create a custom network
-docker network create my-network
+# Default bridge network (automatic)
+docker run -d --name web1 nginx
+docker run -d --name web2 nginx
 
-# Run container on specific network
-docker run -d --network my-network --name web nginx
-
-# List networks
-docker network ls
+# Custom bridge network (recommended)
+docker network create --driver bridge my-bridge
+docker run -d --network my-bridge --name app1 nginx
+docker run -d --network my-bridge --name app2 nginx
 ```
 
-## Docker Volumes
-
-Volumes provide persistent data storage for containers.
+#### 2. Host Network
+Container shares the host's networking namespace. No network isolation.
 
 ```bash
-# Create a volume
+# Container uses host's network directly
+docker run -d --network host nginx
+# Nginx will be accessible on host's port 80 directly
+```
+
+#### 3. None Network
+Container has no network access - completely isolated.
+
+```bash
+# No networking
+docker run -d --network none my-app
+```
+
+#### 4. Overlay Network
+Used for multi-host networking in Docker Swarm or Kubernetes environments.
+
+```bash
+# Create overlay network (requires swarm mode)
+docker network create --driver overlay my-overlay
+```
+
+#### 5. Macvlan Network
+Assigns a MAC address to container, making it appear as a physical device on the network.
+
+```bash
+# Create macvlan network
+docker network create -d macvlan \
+  --subnet=192.168.1.0/24 \
+  --gateway=192.168.1.1 \
+  -o parent=eth0 my-macvlan
+
+# Run container with macvlan
+docker run -d --network my-macvlan --ip=192.168.1.100 nginx
+```
+
+### Network Management
+
+```bash
+# Inspect network details
+docker network inspect my-bridge
+
+# Connect running container to network
+docker network connect my-network container_name
+
+# Disconnect container from network
+docker network disconnect my-network container_name
+
+# Remove network
+docker network rm my-network
+```
+
+### Docker Compose Networking
+
+```yaml
+version: '3.8'
+services:
+  frontend:
+    image: nginx
+    networks:
+      - frontend-net
+      - backend-net
+  
+  backend:
+    image: my-api
+    networks:
+      - backend-net
+      - database-net
+  
+  database:
+    image: postgres
+    networks:
+      - database-net
+
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
+  database-net:
+    driver: bridge
+    internal: true  # No external access
+```
+
+## Docker Storage: Volumes, Bind Mounts, and tmpfs
+
+Docker provides three ways to mount data into containers, each with different use cases.
+
+### 1. Volumes (Recommended)
+Managed by Docker, stored in Docker's area of the host filesystem. Best for production.
+
+#### Named Volumes
+```bash
+# Create named volume
 docker volume create my-data
 
-# Use volume in container
-docker run -d -v my-data:/app/data my-app
+# Use named volume
+docker run -d -v my-data:/app/data nginx
 
-# List volumes
-docker volume ls
+# Multiple containers can share the same volume
+docker run -d -v my-data:/var/log/nginx nginx:alpine
+```
 
-# Remove volume
-docker volume rm my-data
+#### Anonymous Volumes
+```bash
+# Docker creates and manages anonymous volume
+docker run -d -v /app/data nginx
+
+# In Dockerfile
+VOLUME ["/app/data"]
+```
+
+#### Volume Drivers
+```bash
+# Use different storage drivers
+docker volume create --driver local \
+  --opt type=nfs \
+  --opt o=addr=192.168.1.100,rw \
+  --opt device=:/path/to/dir \
+  nfs-volume
+```
+
+Other drivers include `local-persist`, `rexray`, and cloud-specific drivers.
+
+### 2. Bind Mounts
+Mount a host directory or file directly into the container. Useful for development.
+
+```bash
+# Mount host directory to container
+docker run -d -v /host/path:/container/path nginx
+
+# Mount current directory (development)
+docker run -d -v $(pwd):/app node:16
+
+# Read-only bind mount
+docker run -d -v /host/config:/app/config:ro nginx
+
+# Mount specific file
+docker run -d -v /host/nginx.conf:/etc/nginx/nginx.conf:ro nginx
+```
+
+### 3. tmpfs Mounts
+Store data in host's memory. Data disappears when container stops.
+
+```bash
+# Create tmpfs mount
+docker run -d --tmpfs /tmp nginx
+
+# With size limit
+docker run -d --tmpfs /tmp:noexec,nosuid,size=100m nginx
+```
+
+### Volume vs Bind Mount vs tmpfs Comparison
+
+| Feature | Volumes | Bind Mounts | tmpfs |
+|---------|---------|-------------|-------|
+| Host location | Docker managed | User specified | Memory |
+| Persistence | Yes | Yes | No |
+| Performance | Good | Good | Excellent |
+| Backup friendly | Yes | Yes | No |
+| Docker CLI management | Yes | No | No |
+| Works on all platforms | Yes | Limited | Linux only |
+
+### Docker Compose Storage Examples
+
+```yaml
+version: '3.8'
+services:
+  # Named volume example
+  database:
+    image: postgres:13
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: secret
+
+  # Bind mount example (development)
+  web:
+    image: nginx
+    volumes:
+      - ./html:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+
+  # tmpfs example
+  cache:
+    image: redis:alpine
+    tmpfs:
+      - /data:noexec,nosuid,size=1g
+
+  # Multiple mount types
+  app:
+    build: .
+    volumes:
+      # Bind mount for development
+      - .:/app
+      # Named volume for node_modules (prevents host override)
+      - node_modules:/app/node_modules
+      # tmpfs for temporary files
+    tmpfs:
+      - /app/tmp:size=50m
+
+volumes:
+  db_data:
+    driver: local
+  node_modules:
+    driver: local
+```
+
+### Storage Best Practices
+
+#### For Development
+```bash
+# Use bind mounts for code that changes frequently
+docker run -d -v $(pwd):/app -v /app/node_modules node:16
+
+# Exclude certain directories with anonymous volumes
+# This prevents host files from overriding container files
+```
+
+#### For Production
+```bash
+# Use named volumes for data persistence
+docker volume create app-data
+docker run -d -v app-data:/data --name app my-app:latest
+
+# Backup volumes
+docker run --rm -v app-data:/source -v $(pwd):/backup \
+  alpine tar czf /backup/backup.tar.gz -C /source .
+
+# Restore volumes
+docker run --rm -v app-data:/target -v $(pwd):/backup \
+  alpine tar xzf /backup/backup.tar.gz -C /target
+```
+
+#### Volume Drivers and External Storage
+```yaml
+# Using external storage systems
+version: '3.8'
+services:
+  app:
+    image: my-app
+    volumes:
+      - nfs-data:/data
+
+volumes:
+  nfs-data:
+    driver: local
+    driver_opts:
+      type: nfs
+      o: addr=nfs-server.example.com,rw
+      device: ":/path/to/data"
 ```
 
 ## Best Practices
