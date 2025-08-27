@@ -715,3 +715,12 @@ kubectl apply -f demo-app-kubernetes.yml
 3. Access the application
 - Frontend: `http://localhost:30080`
 - Backend API: `http://localhost:30081` 
+
+
+## Extra Learning Resources
+- [Kubernetes Official Documentation](https://kubernetes.io/docs/home/)
+- [Kubernetes Explained](https://youtu.be/aSrqRSk43lY?si=ej75Fk6secOah6vU)
+- [Kubernestes Crash Course](https://youtu.be/s_o8dwzRlu4?si=qehVliChH7oSy9W5)
+- [Kubernetes vs Docker](https://youtu.be/2vMEQ5zs1ko?si=WmJv9sy4cstZOvI4)
+- [Kind](https://kind.sigs.k8s.io/)
+- [Lens IDE](https://k8slens.dev/)
