@@ -48,6 +48,7 @@ uv sync
 uv add package-name
 
 # Run the application locally
+
 uv run python main.py
 ```
 

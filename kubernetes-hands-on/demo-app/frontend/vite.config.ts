@@ -15,14 +15,14 @@ export default defineConfig({
         react(),
         tailwindcss()
     ],
-    // server: {
-    //     port: 5173,
-    //     proxy: {
-    //         '/api': {
-    //             target: apiProxyTarget,
-    //             changeOrigin: true,
-    //             rewrite: (path) => path.replace(/^\/api/, '')
-    //         }
-    //     }
-    // }
+//     server: {
+//         port: 5173,
+//         proxy: {
+//             '/api': {
+//                 target: apiProxyTarget,
+//                 changeOrigin: true,
+//                 rewrite: (path) => path.replace(/^\/api/, '')
+//             }
+//         }
+//     }
 })

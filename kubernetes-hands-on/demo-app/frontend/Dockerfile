@@ -15,10 +15,14 @@ COPY . .
 # Accept VITE_API_PROXY_TARGET as build arg for Vite
 ARG VITE_API_PROXY_TARGET
 ARG VITE_API_BASE_URL
-ENV VITE_API_PROXY_TARGET=${VITE_API_PROXY_TARGET}
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# ENV VITE_API_PROXY_TARGET=${VITE_API_PROXY_TARGET}
+# ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
-RUN npm run build
+# RUN npm run build
+
+# Pass build args as environment variables to the build command
+RUN VITE_API_PROXY_TARGET=${VITE_API_PROXY_TARGET} VITE_API_BASE_URL=${VITE_API_BASE_URL} npm run build
+
 
 # Production stage
 FROM node:22-alpine AS runner
